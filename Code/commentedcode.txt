@@ -1,0 +1,32 @@
+# Run the models and print the results
+#model = linear_model.LinearRegression()
+# model_mse = 0
+# model_r2 = 0
+# i=0
+# for train, test in kf.split(X_model, Y):
+# 	model.fit(X_model[train], Y[train])
+# 	y_pred = model.predict(X_model[test])
+# 	model_mse += mean_squared_error(Y[test], y_pred)
+# 	model_r2 += r2_score(Y[test], y_pred)
+# 	i+=1
+
+# print("DEBUG: LINEAR Average R2 value for the model was %s" % (model_r2/i))
+# print("DEBUG: LINEAR Average MSE value for the model was %s" % (model_mse/i))
+
+
+
+# draft_capital_only = PoissonRegressor(alpha=1/(.75*X_model.shape[0]), max_iter=500)
+
+
+# draft_cap_mse = 0
+# draft_cap_r2 = 0
+# i=0
+# for train, test in kf.split(X_draftcap, Y):
+# 	draft_capital_only.fit(X_draftcap[train], Y[train].ravel())
+# 	y_pred = draft_capital_only.predict(X_draftcap[test])
+# 	draft_cap_mse += mean_squared_error(Y[test], y_pred)
+# 	draft_cap_r2 += mean_poisson_deviance(Y[test], y_pred)
+# 	i+=1
+
+# print("DEBUG: POISSON Average D2 value for just draft capital was %s" % (draft_cap_r2/i))
+# print("DEBUG: POISSON Average MSE value for just draft capital %s" % (draft_cap_mse/i))

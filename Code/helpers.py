@@ -15,8 +15,8 @@ def get_total_years(row, df):
 	matching_rows = df.loc[df['Player'] == name]
 	if matching_rows.empty:
 		# case where there are no matching rows, return 2019 - year in row, maximum from const.
-		print("DEBUG: actual years: %s" % (2019-int(year_drafted) + 1))
-		return min(wr_max_years, 2019-int(year_drafted) + 1)
+		print("DEBUG (18): actual years: %s" % (2019-int(year_drafted) + 1))
+		return min(wr_max_years, (2019-int(year_drafted) + 1))
 	elif len(matching_rows) > 1:
 		# case where there are multiple matching rows, have user pick one :)
 		print("DEBUG: There were multiple matching rows for %s, drafted in year %s" % (name, year_drafted))
@@ -30,8 +30,8 @@ def get_total_years(row, df):
 		value = int(value)
 		matching_rows = matching_rows.iloc[[value]]
 	# happy path, exactly one result
-	print("DEBUG: actual years: %s" % (int(matching_rows["Year"]) - int(year_drafted) + 1))
-	return int(matching_rows["Year"]) - int(year_drafted) + 1
+	print("DEBUG (33): actual years: %s" % (int(matching_rows["Year"]) - int(year_drafted) + 1))
+	return (int(matching_rows["Year"]) - int(year_drafted) + 1)
 
 
 

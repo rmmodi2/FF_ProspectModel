@@ -41,8 +41,8 @@ TODO: left out: Height Adjusted Speed Score, BEST MS Yards, Total College Domina
 # Start with the "independent variables - model stuff and draft capital"
 
 filtered_cols = wr_data[[('Unnamed: 0_level_0', 'Name'), ('Unnamed: 1_level_0', 'School'), ("Unnamed: 4_level_0",'DP'), ("Breakout Ages", ">20%"), ("Breakout Ages", ">30%"), 
-("RecYds/TmPatt", "BEST"), ("Dominator", "BEST"), ("Context Scores", "PPG Above conference expectation (Last Year)"), ("Context Scores", "TeamMate Score"), 
-("Combine", "WaSS"), ("Combine", "BMI")]]
+("RecYds/TmPatt", "BEST"), ("Dominator", "BEST"), ("MS Yards", "BEST"), ("Context Scores", "PPG Above conference expectation (Last Year)"), ("Context Scores", "TeamMate Score"), 
+("Context Scores", "Last S/EX"), ("Combine", "WaSS"), ("Combine", "HaSS"), ("Combine", "BMI")]]
 draft_capital_only = wr_data[[('Unnamed: 0_level_0', 'Name'), ("Unnamed: 4_level_0",'DP')]]
 
 # Dependent Variable is the score
@@ -70,18 +70,15 @@ name_and_score = pd.DataFrame(name_and_score, columns=["Name", "Score"])
 
 # sort by alphabetical names
 
-
-
 print("DEBUG: ###################################")
 print(name_and_score)
 print("DEBUG: ###################################")
 
-# replace the NA values from filtered columns with the mean from the group of data
+# replace the NA values from filtered columns with what we want
 # sort by alphabetical names
-# !!!
-# TODO: alter this to "last seen" ?
-# !!!
 
+filtered_cols[("Breakout Ages", ">20%")].fillna(value=35, inplace=True)
+filtered_cols[("Breakout Ages", ">30%")].fillna(value=35, inplace=True)
 filtered_cols.fillna(filtered_cols.mean(), inplace=True)
 
  # sort everything by alphabetical name and save to excel files, we will worry about joining manually.

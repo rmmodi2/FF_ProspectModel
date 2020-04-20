@@ -30,3 +30,25 @@
 
 # print("DEBUG: POISSON Average D2 value for just draft capital was %s" % (draft_cap_r2/i))
 # print("DEBUG: POISSON Average MSE value for just draft capital %s" % (draft_cap_mse/i))
+
+
+filtered_cols = wr_data[[('Unnamed: 0_level_0', 'Name'), ('Unnamed: 1_level_0', 'School'), ("Unnamed: 4_level_0",'DP'), ("Breakout Ages", ">20%"), ("Breakout Ages", ">30%"), 
+("RecYds/TmPatt", "BEST"), ("Dominator", "BEST"), ("Context Scores", "PPG Above conference expectation (Last Year)"), ("Context Scores", "TeamMate Score"), 
+("Combine", "WaSS"), ("Combine", "BMI")]]
+
+# let's graph it
+
+# model_x_train, model_x_test, model_draft_train, model_draft_test, model_y_train, model_y_test = train_test_split(X_model, X_draftcap, Y, test_size=.1, shuffle=True)
+
+# model.fit(model_x_train, model_y_train.ravel())
+# draft_capital_only.fit(model_draft_train, model_y_train)
+
+# model_pred = model.predict(model_x_test)
+# draft_cap_pred = draft_capital_only.predict(model_draft_test)
+
+# plt.plot(range(len(model_pred)), model_pred, "g--", range(len(model_pred)), model_y_test, "r^", range(len(model_pred)), draft_cap_pred, "b--")
+# plt.xlabel("index of observation")
+# plt.ylabel("score - model in green, draft capital in blue, actual in red")
+# plt.title("Predicting scores of Wide Receiver Prospects")
+# plt.grid(True)
+# plt.show()

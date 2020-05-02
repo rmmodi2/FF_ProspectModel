@@ -33,7 +33,7 @@
 
 filtered_cols = wr_data[[('Unnamed: 0_level_0', 'Name'), ('Unnamed: 1_level_0', 'School'), ("Unnamed: 4_level_0",'DP'), ("Breakout Ages", ">20%"), ("Breakout Ages", ">30%"), 
 ("RecYds/TmPatt", "BEST"), ("Dominator", "BEST"), ("Context Scores", "PPG Above conference expectation (Last Year)"), ("Context Scores", "TeamMate Score"), 
-("Combine", "WaSS"), ("Combine", "BMI")]]
+("Combine", "WaSS"), ("Combine", "BMI")]]/
 
 # let's graph it
 
@@ -111,4 +111,24 @@ print("DEBUG: POISSON Average MSE value for the model was %s\n" % (model_mse/i))
 
 # filtered_columns.loc[:, ("Unnamed: 4_level_0", 'DP')] = np.log(filtered_columns["Unnamed: 4_level_0"]['DP'])
 # draft_capital_only.loc[:, ("Unnamed: 4_level_0", 'DP')] = np.log(draft_capital_only["Unnamed: 4_level_0"]['DP'])
+
+
+# Pre-process X_model so that some columns are one-hot encoded
+
+# transformer = ColumnTransformer(
+# 	[("encode_schools", OneHotEncoder(), [0])],
+# 	remainder="passthrough"
+# 	)
+
+# X_model = transformer.fit_transform(X_model)
+
+# model_x_train, model_x_test, model_y_train, model_y_test = train_test_split(X_model, Y, test_size=.1, shuffle=True)
+
+# model.fit(model_x_train,model_y_train.ravel())
+# r_2 = model.score(model_x_test,model_y_test.ravel())
+
+# print("DEBUG: ENSEMBLE r^2 value was %s" % r_2)
+
+# feature_weight = pd.DataFrame({"Feature": model_columns.columns.tolist(), "Importance": model.feature_importances_})
+# print(feature_weight)
 

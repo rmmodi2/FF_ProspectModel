@@ -1,0 +1,172 @@
+---
+title: "scraping_cfb_prospect_data"
+author: "Ronak Modi"
+date: "6/4/2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+```{r}
+install.packages('tidyverse')
+
+install.packages("devtools")
+devtools::install_github("meysubb/cfbscrapR")
+
+remotes::install_github("rstudio/gt")
+```
+
+
+```{r}
+library(tidyverse)
+library(cfbscrapR)
+library(gt)
+```
+
+
+
+```{r}
+player_recruiting_rankings <- data.frame()
+for (i in 2002:2020){
+  data <- cfb_recruiting(i)
+  df <- data.frame(data)
+  player_recruiting_rankings <- bind_rows(player_recruiting_rankings, df)
+}
+```
+
+```{r}
+install.packages("openxlsx")
+```
+```{r}
+levels(factor(player_recruiting_rankings$position))
+player_recruiting_rankings <- player_recruiting_rankings %>% filter(!position %in% c("DT","K","LS","OC","OG","OT","P","SDE","WDE"))
+levels(factor(player_recruiting_rankings$position))
+```
+
+
+```{r}
+library(openxlsx)
+write.csv(player_recruiting_rankings, file="/Users/ronakmodi/FF_ProspectModel/Data/recruiting_rankings.csv")
+```
+
+
+```{r}
+install.packages("jsonlite")
+install.packages("httr")
+```
+
+
+```{r}
+library(jsonlite)
+library(httr)
+cfb_player_ppa_season <- function(year) {
+  url = paste0("https://api.collegefootballdata.com/ppa/players/season?year=", year)
+  df = fromJSON(url)
+  return(df)
+}
+
+cfb_games <- function(year,week,seasonType) {
+  url = paste0("https://api.collegefootballdata.com/games?year=",year,"&week=",week,"&seasonType=",seasonType)
+  df = fromJSON(url)
+  return(df)
+}
+
+cfb_player_usage <- function(year) {
+  url = paste0("https://api.collegefootballdata.com/player/usage?year=",year)
+  df = fromJSON(url)
+  return(df)
+}
+```
+
+
+
+```{r}
+player_ppa_season <- data.frame()
+for (i in 1999:2019){
+  data <- cfb_player_ppa_season(i)
+  df <- data.frame(data)
+  player_ppa_season <- bind_rows(player_ppa_season, df)
+}
+```
+```{r}
+head(player_ppa_season)
+glimpse(player_ppa_season$averagePPA)
+levels(factor(player_ppa_season$season))
+write.csv(player_ppa_season,file="/Users/ronakmodi/FF_ProspectModel/Data/player_season_ppa.csv")
+```
+
+```{r}
+team_talent <- data.frame()
+for (i in 2001:2019){
+  data <- cfb_team_talent(i)
+  df <- data.frame(data)
+  team_talent <- bind_rows(team_talent, df)
+}
+head(team_talent)
+glimpse(team_talent)
+levels(factor(team_talent$year))
+write.csv(team_talent, file="/Users/ronakmodi/FF_ProspectModel/Data/cfb_team_talent_rankings.csv")
+```
+
+```{r}
+cfb_team_strength_SP <- data.frame()
+for (i in 1999:2019){
+  data <- cfb_sp_ranking(i)
+  df <- data.frame(data)
+  cfb_team_strength_SP <- bind_rows(cfb_team_strength_SP, df)
+}
+head(cfb_team_strength_SP)
+glimpse(cfb_team_strength_SP)
+levels(factor(cfb_team_strength_SP$conference))
+write.csv(cfb_team_strength_SP, file="/Users/ronakmodi/FF_ProspectModel/Data/cfb_team_SPRankings.csv")
+```
+```{r}
+cfb_conf_strength_SP <- data.frame()
+for (i in 1999:2019){
+  for (conf in c("ACC", "AAC", "B1G", "CUSA", "Ind", "MAC", "MWC",  "PAC", "SEC", "SBC")){
+    data <- cfb_sp_ranking(year=i,conference = conf)
+    df <- data.frame(data)
+    cfb_conf_strength_SP <- bind_rows(cfb_conf_strength_SP, df)
+  }
+}
+tail(cfb_conf_strength_SP)
+glimpse(cfb_conf_strength_SP)
+levels(factor(cfb_conf_strength_SP$year))
+write.csv(cfb_conf_strength_SP, file="/Users/ronakmodi/FF_ProspectModel/Data/cfb_conf_SPrankings.csv")
+```
+
+
+```{r}
+player_usage <- data.frame()
+for (year in 1999:2019){
+  data <- cfb_player_usage(year)
+  df <- data.frame(data)
+  player_usage <- bind_rows(player_usage,df)
+}
+head(player_usage)
+glimpse(player_usage)
+write.csv(player_usage, file="/Users/ronakmodi/FF_ProspectModel/Data/player_usage_stats.csv")
+```
+

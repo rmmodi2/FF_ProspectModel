@@ -59,6 +59,8 @@ fwd_sel_cont = ['DP', 'YOa (Yards Over Age Average) AVG', 'vacated_yds_pct', 'PP
 
 fwd_sel_cat = ['Breakout Age >30%']
 
+using = ['DP', 'YOa (Yards Over Age Average) AVG', 'PPG Above conference expectation (Last Year)', 'hc_tenure', 'Breakout Age >20%', 'Last S/EX (Yds Share Over Expectation)', ]
+
 # CDF
 # sns.set_style("whitegrid")
 # plot = sns.distplot(true_points, hist=False, kde=True, kde_kws={'linewidth':2, 'cumulative': True})
@@ -77,15 +79,15 @@ fwd_sel_cat = ['Breakout Age >30%']
 
 # Plot a curve of best fit / dot plot of each continuous indepdenent variable vs the dependent variable
 
-for feature in fwd_sel_cont:
-	x = wr_data[[feature]]
-	x = x.to_numpy().flatten()
-	y = true_points.flatten()
-	plt.plot(x,y,'o')
-	lowess_est = helpers.lowess(x,y)
-	plt.plot(lowess_est[:,0],lowess_est[:,1],'-',linewidth=3)
-	plt.title(str(feature))
-	plt.show()
+# for feature in fwd_sel_cont:
+# 	x = wr_data[[feature]]
+# 	x = x.to_numpy().flatten()
+# 	y = true_points.flatten()
+# 	plt.plot(x,y,'o')
+# 	lowess_est = helpers.lowess(x,y)
+# 	plt.plot(lowess_est[:,0],lowess_est[:,1],'-',linewidth=3)
+# 	plt.title(str(feature))
+# 	plt.show()
 
 # # Plot a seperate boxplot for each category in all categorical indepedent variables vs the dependent variable
 
@@ -155,7 +157,21 @@ for feature in fwd_sel_cont:
 # 	plt.show()
 
 
+# LOGISTIC REGRESSION
 
+# Plot p(success) vs bin 
+
+# for i,f in enumerate(using):
+# 	for f2 in using[i+1:]:
+# 		print(f)
+# 		print(f2)
+# 		wr_data[f+f2] = np.multiply(wr_data[f],wr_data[f2])
+# 		sns.regplot(x=f+f2, y='hit_within3years', data=wr_data, logistic=True, n_boot=448)
+# 		plt.show()
+
+
+# sns.regplot(x='hc_tenure', y='hit_within3years', data=wr_data, logistic=True, n_boot=448)
+# plt.show()
 
 """
 draft position + log(DP)

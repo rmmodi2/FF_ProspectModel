@@ -5,7 +5,7 @@ import numpy as np
 import math
 from math import log
 from sklearn import datasets, linear_model
-from sklearn.metrics import mean_squared_error, r2_score, balanced_accuracy_score, recall_score, log_loss
+from sklearn.metrics import mean_squared_error, r2_score, balanced_accuracy_score, recall_score, log_loss, f1_score
 from sklearn.model_selection import KFold
 import re
 import statsmodels.api as sm
@@ -119,20 +119,25 @@ def create_coaching_history():
 	global coaching_history
 	coaching_history = pd.read_excel("/Users/ronakmodi/FF_ProspectModel/Data/coaching_history.xlsx")
 
-def generate_ppr_ppg_by_48(wr_data):
+def generate_ppr_ppg_by_48(wr_data, qb=False):
 	create_fantasy_finishes_by_year()
 	column = []
 	success_1 = []
 	success_2 = []
 	hit_col = []
+	hit_first3 = []
 	for idx, row in wr_data.iterrows():
 		success_total = False
 		success_pg = False
+		hit_f3 = False
 		name = regex.sub('',row[('Unnamed: 0_level_0', 'Name')]).lower()
 		pos = row[('Unnamed: 5_level_0', 'NFL POS')]
 		draft_year = row[('Unnamed: 6_level_0', 'Draft Year')]
 		draft_year = int(draft_year)
-		hit_col.append(int(int(row[("NFL Career Marks since 2000", "# of top  24 finishes")]) > 0))
+		if qb:
+			hit_col.append(int(int(row[("NFL Career Marks since 2000", "# of top  12 finishes")]) > 0))
+		else:
+			hit_col.append(int(int(row[("NFL Career Marks since 2000", "# of top  24 finishes")]) > 0))
 		points=0
 		for years in [draft_year, draft_year+1, draft_year+2]:
 			if years > 2019:
@@ -157,12 +162,17 @@ def generate_ppr_ppg_by_48(wr_data):
 			games = float(row[("Games", "G")])
 			posrank = int(row[("Fantasy", "PosRank")])
 			points+=season_pts
+			if qb:
+				hit_f3 = bool(hit_f3 or posrank <= 12)
+			else:
+				hit_f3 = bool(hit_f3 or posrank <= 24)
 			success_total = bool(success_total or season_pts>=160)
 			success_pg = bool(success_total or (season_pts/games)>=10)
+		hit_first3.append(int(hit_f3))
 		column.append((points/48))
 		success_1.append(int(success_total))
 		success_2.append(int(success_pg))
-	return column, success_1, success_2, hit_col	
+	return column, success_1, success_2, hit_col, hit_first3	
 
 def generate_conference_strength(wr_data):
 	create_school_and_conf_info()
@@ -206,7 +216,6 @@ def generate_team_strength(wr_data):
 		team = row[('Unnamed: 1_level_0', "School")]
 		team = regex.sub('',str(team).lower())
 		team_year = int(row[('Unnamed: 6_level_0', "Draft Year")]) - 1
-		years_played = int(row[('Total Counting Stats', 'Years Played')])
 		df_school = school_strength_by_year[team_year]
 		match = df_school[df_school['Unnamed: 1_level_0']["School"] == team]
 		if len(match) == 0:
@@ -535,7 +544,7 @@ def cross_validation(features, data, y, model=None, quantile=None, max_iter=1000
 
 	is_statsmodel = (model is None)
 
-	yrs = [2001,2002,2003,2004,2005,2006,2007,2008,2009,2010,2011,2012,2013,2014,2015,2016,2017]
+	yrs = data["Draft Year"].unique()
 	result_df = pd.DataFrame()
 
 	# Initialize empty values for the Y^ model, Y^ baseline, and actual Y.
@@ -584,7 +593,6 @@ def cross_validation(features, data, y, model=None, quantile=None, max_iter=1000
 		# test["Model Projected Average PPR Points Per First 48 Games"] = inv_boxcox(Y_pred, value)
 		if logistic:
 			test["Model"] = Y_proba
-			test["Model_Class"] = Y_pred
 		test["Actual"] = Y_test
 		if not logistic:
 			test["Model"] = Y_pred
@@ -593,8 +601,8 @@ def cross_validation(features, data, y, model=None, quantile=None, max_iter=1000
 
 	# Calculate total r^2 and total RMSE on overall predictions, or if logistic balanced_accuracy and sensitivity
 	if logistic:
-		model_r_2 = balanced_accuracy_score(actual_values, model_predicted)
-		model_rmse = recall_score(actual_values, model_predicted)
+		model_r_2 = log_loss(actual_values, model_predicted)
+		model_rmse = f1_score(actual_values, model_predicted)
 	else:
 		model_r_2 = 1-(1-r2_score(actual_values, model_predicted))*((len(model_predicted)-1)/(len(model_predicted)-X_train.shape[1]-1))
 		model_rmse = mean_squared_error(actual_values, model_predicted, squared=False)
@@ -639,7 +647,7 @@ def forward_stepwise_selection(possible_features, data, y, model=None, quantile=
 				best_iter_r2 = r2
 				best_f = feature
 		if logistic:
-			print("best feature in this iteration was %s with recall score %s and balanced_accuracy %s" % (best_f, best_iter_rmse, best_iter_r2))
+			print("best feature in this iteration was %s with f1 score %s and log loss %s" % (best_f, best_iter_rmse, best_iter_r2))
 		else:
 			print("best feature in this iteration was %s with rmse %s and r2 %s" % (best_f, best_iter_rmse, best_iter_r2))
 		if (not logistic) and best_iter_rmse < curr_min_rmse:
@@ -675,9 +683,9 @@ def backwards_stepwise_selection(possible_features, data, y, model=None, quantil
 			print("testing feature %s removed" % str(feature))
 			if model:
 				if logistic:
-					rmse, r2, _, _ = cross_validation(feature_list+[feature], data, y, model=model, logistic=True)
+					rmse, r2, _, _ = cross_validation([j for j in feature_list if j != feature], data, y, model=model, logistic=True)
 				else:
-					rmse, r2, _, _ = cross_validation(feature_list+[feature], data, y, model=model)
+					rmse, r2, _, _ = cross_validation([j for j in feature_list if j != feature], data, y, model=model)
 			else:
 				rmse, r2, _, _ = cross_validation([j for j in feature_list if j != feature], data, y, quantile=quantile,max_iter=max_iter, p_tol=p_tol)
 			if (not logistic) and rmse < best_iter_rmse:
@@ -688,7 +696,10 @@ def backwards_stepwise_selection(possible_features, data, y, model=None, quantil
 				best_iter_rmse = rmse
 				best_iter_r2 = r2
 				best_f = feature
-		print("best feature in this iteration was %s with rmse %s and r2 %s" % (best_f, best_iter_rmse, best_iter_r2))
+		if logistic:
+			print("best feature in this iteration was %s with f1 score %s and log loss %s" % (best_f, best_iter_rmse, best_iter_r2))
+		else:
+			print("best feature in this iteration was %s with rmse %s and r2 %s" % (best_f, best_iter_rmse, best_iter_r2))
 		if (not logistic) and best_iter_rmse < curr_min_rmse:
 			curr_min_rmse = best_iter_rmse
 			r2_for_best = best_iter_r2
@@ -700,6 +711,11 @@ def backwards_stepwise_selection(possible_features, data, y, model=None, quantil
 		else:
 			break
 	return feature_list, curr_min_rmse, r2_for_best
+
+def ret_predict(x, y, model):
+	model.fit(x)
+	model.predict(y)
+
 
 def lowess(x,y,fraction=.2):
 	x,indices = np.unique(x,return_index=True)

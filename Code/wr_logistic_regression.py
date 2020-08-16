@@ -23,10 +23,17 @@ from supersmoother import SuperSmoother
 
 wr_data = pd.read_excel("/Users/ronakmodi/FF_ProspectModel/Data/wr_data_truepts.xlsx", header=[0])
 wr_data = wr_data[wr_data["Draft Year"]!=2020]
-wr_data = wr_data[wr_data["Draft Year"]!=2018]
-wr_data = wr_data[wr_data["Draft Year"]!=2019]
+wr_data = wr_data[(wr_data["Draft Year"]!=2018) | (wr_data["hit_within3years"] == 1)]
+wr_data = wr_data[(wr_data["Draft Year"]!=2019) | (wr_data["hit_within3years"] == 1)]
 
 print("DEBUG: Number of players in our sample: %s" % wr_data.shape[0])
+
+hits = wr_data[wr_data["hit_within3years"]==1]
+
+print("DEBUG: Number of hits in our sample: %s" % hits.shape[0])
+
+print("DEBUG: Percent of hits in our sample: %s" % (hits.shape[0]/wr_data.shape[0]))
+
 print(wr_data.columns.tolist())
 
 draft_capital_only = ['DR', 'DP']
@@ -39,63 +46,79 @@ features = ['Age IN DRAFT YEAR', 'Years Played', 'G', 'AVG PPG', 'rec', 'YARDS',
 'Final Year Conference Defensive Strength', 'Final Year Team Strength', 'Final Year Team Offensive Strength', 'Broke Out 20', 'Broke Out 30', 'Yards Leader Final Year', 'punt_returns', 'kick_returns', 'kick_return_yards', 'punt_return_yards', 'kick_return_avg', 
 'punt_return_avg', 'kick_return_td', 'punt_return_td', 'hc_tenure', 'oc_tenure', 'hc_retained', 'oc_retained', 'vacated_tgt_pct', 'vacated_rec_pct', 'vacated_yds_pct', 'Att', 'Cmp%', 'Yds', 'Y/A', 'AY/A', 'Y/C', 'Rate', 'NY/A', 'ANY/A', 'EXP']
 
-after_fwd_sel = ['RecYds/TmPatt AVG', 'Final Year Team Strength', 'PPG Above conference expectation (Last Year)', 'Breakout Age >30%', 'Y/C']
-fwd_sel_add_dc = after_fwd_sel + ['DR']
-after_full_fwd_sel = ['DR', 'Breakout Age >30%', 'MS Yards Last', 'DOa (Dom Over Average) Best', 'MS Yards Best', 'Y/A']
+using = ['DP', 'YOa (Yards Over Age Average) AVG', 'PPG Above conference expectation (Last Year)', 'hc_tenure', 'Breakout Age >20%', 'Last S/EX (Yds Share Over Expectation)']
 
-# for f in features+draft_capital_only:
-# 	if f in after_full_fwd_sel:
+interaction = {
+	'DP':['YOa (Yards Over Age Average) AVG', 'PPG Above conference expectation (Last Year)', 'hc_tenure', 'Breakout Age >20%', 'Last S/EX (Yds Share Over Expectation)',],
+	'YOa (Yards Over Age Average) AVG': ['PPG Above conference expectation (Last Year)', 'hc_tenure', 'Breakout Age >20%', 'Last S/EX (Yds Share Over Expectation)',],
+	'PPG Above conference expectation (Last Year)': ['hc_tenure', 'Breakout Age >20%', 'Last S/EX (Yds Share Over Expectation)',],
+	'Breakout Age >20%': ['Last S/EX (Yds Share Over Expectation)',]
+}
+
+candidates = []
+
+for k in interaction.keys():
+	for v in interaction[k]:
+		name = k+"_times_"+v
+		wr_data[name] = np.multiply(wr_data[k],wr_data[v])
+		candidates.append(name)
+
+model = LogisticRegression()
+
+# for f in candidates+trying+using:
+# 	if f in trying:
 # 		continue
-# 	model = linear_model.LogisticRegression()
-# 	recall_score, balanced_accuracy, _, _ = helpers.cross_validation(after_full_fwd_sel+[f], wr_data, "broke_160pts", model=model, logistic=True)
-# 	print("Recall Score (Sensitivity): {}".format(recall_score))
-# 	print("Balanced Accuracy: {}".format(balanced_accuracy)) 
-# 	print(pd.DataFrame({"Features":after_full_fwd_sel+[f], 'Coefficient': model.coef_[0]}))
-# 	input("Press any key to continue\n")
-
-
-# x = wr_data[features]
-# y = wr_data['broke_160pts']
-# logistic = sm.Logit(y,x)
-# results = logistic.fit()
-# print(results.summary())
- 
-
-model = linear_model.LogisticRegression()
-
-recall_score, balanced_accuracy, result_df, _ = helpers.cross_validation(after_full_fwd_sel, wr_data, "broke_160pts", model=model, logistic=True)
-# features, recall_score, balanced_accuracy = helpers.forward_stepwise_selection(features+draft_capital_only, wr_data, "broke_160pts", model=model, logistic=True)
-
-print("Recall Score (Sensitivity): {}".format(recall_score))
-print("Balanced Accuracy: {}".format(balanced_accuracy)) 
-print(pd.DataFrame({"Features":after_full_fwd_sel, 'Coefficient': model.coef_[0]}))
-# # print("Features: {}".format(features))
-ax = plt.subplot()
-sns.heatmap(confusion_matrix(result_df["Actual"], result_df["Model_Class"]), ax=ax, annot=True,fmt='g')
-ax.set_xlabel("Predicted Labels")
-ax.set_ylabel("True Labels")
-ax.xaxis.set_ticklabels(["No", ">=160 ppr points"])
-ax.yaxis.set_ticklabels(["No", ">=160 ppr points"])
-plt.show()
-
-result_df.to_excel("/Users/ronakmodi/FF_ProspectModel/Results/wide_receiver_logistic_regression.xlsx")
-
-#hyperparameter training
-
-# w = 'balanced'
-
-# for m in max_iter:
-# 	print("Max_iter: {}".format(m))
-# 	model = linear_model.LogisticRegression(class_weight=w)
-# 	recall_score, balanced_accuracy, result_df, _ = helpers.cross_validation(after_full_fwd_sel, wr_data, "broke_160pts", model=model, logistic=True)
-# 	print("Recall Score (Sensitivity): {}".format(recall_score))
-# 	print("Balanced Accuracy: {}".format(balanced_accuracy)) 
-# 	print(pd.DataFrame({"Features":after_full_fwd_sel, 'Coefficient': model.coef_[0]}))
+# 	print("Trying out feature {}".format(f))
+# 	f1_score, log_loss, results, _ = helpers.cross_validation(trying+[f], wr_data, "hit_within3years", model=model, logistic=True)
+# 	print("f1_score: {}".format(f1_score))
+# 	print("log loss: {}".format(log_loss))
+# 	print(pd.DataFrame.from_dict(zip(trying+[f], model.coef_[0]), orient='columns'))
 # 	ax = plt.subplot()
-# 	sns.heatmap(confusion_matrix(result_df["Actual"], result_df["Model_Class"]), ax=ax, annot=True)
+# 	sns.heatmap(confusion_matrix(results["Actual"], results["Model_Class"]), ax=ax, annot=True, fmt='g')
 # 	ax.set_xlabel("Predicted Labels")
 # 	ax.set_ylabel("True Labels")
-# 	ax.xaxis.set_ticklabels(["No", ">=160 ppr points"])
-# 	ax.yaxis.set_ticklabels(["No", ">=160 ppr points"])
+# 	ax.xaxis.set_ticklabels(["No", "Top 24 Finish (f3)"])
+# 	ax.yaxis.set_ticklabels(["No", "Top 24 Finish (f3)"])
 # 	plt.show()
+
+# features, f1_score, log_loss = helpers.forward_stepwise_selection(using+candidates, wr_data, "hit_within3years", model=model, logistic=True)
+# features, f1_score, log_loss = helpers.backwards_stepwise_selection(using, wr_data, "hit_within3years", model=model, logistic=True)
+f1_score, log_loss, results, _ = helpers.cross_validation(using, wr_data, "hit_within3years", model=model, logistic=True)
+
+# print("Features: {}".format(features))
+# print("f1_score: {}".format(f1_score))
+# print("log loss: {}".format(log_loss))
+# print(pd.DataFrame.from_dict(zip(using, model.coef_[0]), orient='columns'))
+# ax = plt.subplot()
+# sns.heatmap(confusion_matrix(results["Actual"], results["Model_Class"]), ax=ax, annot=True, fmt='g')
+# ax.set_xlabel("Predicted Labels")
+# ax.set_ylabel("True Labels")
+# ax.xaxis.set_ticklabels(["No", "Top 24 Finish (f3)"])
+# ax.yaxis.set_ticklabels(["No", "Top 24 Finish (f3)"])
+# plt.show()
+
+# results.to_excel("/Users/ronakmodi/FF_ProspectModel/Results/wide_receiver_logistic_regression.xlsx", index=False)
+
+print(results.columns.values)
+
+new_data = pd.read_excel("/Users/ronakmodi/FF_ProspectModel/Data/wr_data_truepts.xlsx", header=[0])
+new_data = new_data[(new_data["Draft Year"] > 2017) & (new_data["hit_within3years"] == 0)] 
+
+model.fit(wr_data[using], wr_data["hit_within3years"])
+model_proba = model.predict_proba(new_data[using])
+model_proba = [sample[1] for sample in model_proba]
+res = new_data[['Name','Draft Year']+using]
+res.insert(8,"Model",model_proba,True)
+res.insert(9,"Actual",np.repeat("UNK",120),True)
+
+print(res.columns.values)
+
+results = results.append(res,ignore_index=True)
+
+# results.to_excel("/Users/ronakmodi/FF_ProspectModel/Results/wide_receiver_results.xlsx",index=False)
+
+
+
+
+
 

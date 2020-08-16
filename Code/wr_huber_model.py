@@ -76,6 +76,8 @@ for k in to_interact.keys():
 		# interactions.append(name)
 		# fwd_sel.append(name)
 
+using = ['DP_times_YOa (Yards Over Age Average) AVG', 'vacated_yds_pct_times_PPG Above conference expectation (Last Year)', 'Breakout Age >30%', 'PPG Above conference expectation (Last Year)_times_punt_return_avg']
+
 # param_grid = {
 # 				'epsilon':epsilon,
 # 				'max_iter': max_iter,
@@ -126,17 +128,33 @@ for k in to_interact.keys():
 # results = huber.fit(maxiter=200,tol=.7)
 # print(results.summary())
 
-# model = linear_model.HuberRegressor(alpha=.001,epsilon=3.32,max_iter=200,tol=.7)
+model = linear_model.HuberRegressor(alpha=.001,epsilon=3.32,max_iter=200,tol=.7)
 
-# rmse, r2, result_df, _ = helpers.cross_validation(fwd_sel, wr_data, 'true_points', model=model)
-# features, rmse, r2 = helpers.forward_stepwise_selection(fwd_sel, wr_data, 'true_points', model)
+rmse, r2, result_df, _ = helpers.cross_validation(using, wr_data, 'true_points', model=model)
+# features, rmse, r2 = helpers.forward_stepwise_selection(using, wr_data, 'true_points', model)
 
-# print("RMSE %s" % rmse)
-# print("Adj R2: %s" % r2)
+print("RMSE %s" % rmse)
+print("Adj R2: %s" % r2)
 # print("Features: {}".format(features))
 # print(wr_data[fwd_sel].corr())
-# print(pd.DataFrame.from_dict(zip(fwd_sel, model.coef_), orient='columns'))
-# result_df.to_excel("/Users/ronakmodi/FF_ProspectModel/Results/wide_receiver_robusthuber_residuals.xlsx")
+print(pd.DataFrame.from_dict(zip(using, model.coef_), orient='columns'))
+half_std_success_rate = []
+full_std_success_rate = []
+stddev = result_df["Model"].std()
+for idx, row in result_df.iterrows():
+	lower_range = float(row["Model"]) - stddev/2
+	upper_range = float(row["Model"]) + stddev/2
+	matches = result_df[(result_df["Model"] >= lower_range) & (result_df["Model"] <= upper_range)] 
+	half_std_success_rate.append(len(matches[matches["hit"] == 1]) / len(matches) - int(row["hit"]) / len(matches))
+	lower_range = float(row["Model"]) - stddev
+	upper_range = float(row["Model"]) + stddev
+	matches = result_df[(result_df["Model"] >= lower_range) & (result_df["Model"] <= upper_range)] 
+	full_std_success_rate.append(len(matches[matches["hit"] == 1]) / len(matches) - int(row["hit"]) / len(matches))
+
+result_df["P(Success) .5 Std"] = half_std_success_rate
+result_df["P(Success) 1 Std"] = full_std_success_rate
+result_df.to_excel("/Users/ronakmodi/FF_ProspectModel/Results/wide_receiver_robusthuber_residuals.xlsx")
+
 
 # for f in features:
 # 	y = np.abs(result_df['Residual']).to_numpy().flatten()
@@ -149,31 +167,31 @@ for k in to_interact.keys():
 # 	plt.show()
 
 
-epsilon = [i/100 for i in np.arange(100,600).tolist()]
-max_iter = np.arange(10,510,10).tolist()
-alpha = [.00001,.0001,.001,.01,.1,.5,.05,.005,.0005,.00005]
-tol = [.00001,.0001,.001,.01,.1,.4,.7,.5,.25,.025,.0025]
+# epsilon = [i/100 for i in np.arange(100,600).tolist()]
+# max_iter = np.arange(10,510,10).tolist()
+# alpha = [.00001,.0001,.001,.01,.1,.5,.05,.005,.0005,.00005]
+# tol = [.00001,.0001,.001,.01,.1,.4,.7,.5,.25,.025,.0025]
 
-best_rmse = 92347239473209472
-best_r2 = None
-best_params = []
-for e in epsilon:
-	for m in max_iter:
-		for a in alpha:
-			for t in tol:
-				print("Attempting hyperparameters epsilon: {}, max_iter: {}, alpha: {}, tol: {}".format(e,m,a,t))
-				model = linear_model.HuberRegressor(alpha=a,epsilon=e,max_iter=m,tol=t)
-				try:
-					rmse, r2, _, _ = helpers.cross_validation(fwd_sel, wr_data, 'true_points', model=model)
-					if rmse < best_rmse:
-						best_params = [e,m,a,t]
-						best_rmse = rmse
-						best_r2 = r2
-				except:
-					continue
-print("RMSE: {}".format(best_rmse))
-print("R2: {}".format(best_r2))
-print("Best Params: epsilon: {}, max_iter: {}, alpha: {}, tol: {}".format(*best_params))
+# best_rmse = 92347239473209472
+# best_r2 = None
+# best_params = []
+# for e in epsilon:
+# 	for m in max_iter:
+# 		for a in alpha:
+# 			for t in tol:
+# 				print("Attempting hyperparameters epsilon: {}, max_iter: {}, alpha: {}, tol: {}".format(e,m,a,t))
+# 				model = linear_model.HuberRegressor(alpha=a,epsilon=e,max_iter=m,tol=t)
+# 				try:
+# 					rmse, r2, _, _ = helpers.cross_validation(fwd_sel, wr_data, 'true_points', model=model)
+# 					if rmse < best_rmse:
+# 						best_params = [e,m,a,t]
+# 						best_rmse = rmse
+# 						best_r2 = r2
+# 				except:
+# 					continue
+# print("RMSE: {}".format(best_rmse))
+# print("R2: {}".format(best_r2))
+# print("Best Params: epsilon: {}, max_iter: {}, alpha: {}, tol: {}".format(*best_params))
 
 
 
